@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: BSD-2-Clause
+
+.{
+    .name = .fluxion_image,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.16.0",
+    .fingerprint = 0x3a94a2657564227f,
+    .dependencies = .{
+        // The CRC every PNG chunk ends with.
+        .fluxion_hash = .{
+            .url = "git+https://github.com/kisstp2006/fluxion-hash#3260ac0d478e025a143e2ef9094c1bf72a932868",
+            .hash = "fluxion_hash-0.1.0-Zu520_IkAQCn0T4xz2CCSD724jkXcbzZBb_dFirBrjS2",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "examples",
+        "README.md",
+    },
+}
