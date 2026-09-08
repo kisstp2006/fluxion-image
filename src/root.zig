@@ -4,16 +4,26 @@
 //!
 //! One piece so far:
 //!
-//!   `png`  Writing a PNG: the minimum the format needs, and nothing it does
-//!          not, so a frame read back from a GPU can be looked at by anybody.
+//!   `png`  A PNG, read and written: a frame saved so it can be looked at,
+//!          and a texture loaded so it can be drawn.
 //!
 //! ```zig
+//! // Out, to be looked at.
 //! try image.png.writeFile(gpa, io, "frame.png", .{
 //!     .width = 960,
 //!     .height = 540,
 //!     .pixels = pixels,          // RGBA, eight bits a channel
 //!     .row_pitch = 960 * 4,
 //!     .origin = .bottom_left,    // what glReadPixels hands back
+//! }, .{});
+//!
+//! // In, to be drawn.
+//! var atlas = try image.png.readFile(gpa, io, "atlas.png", .{});
+//! defer atlas.deinit(gpa);
+//! const texture = try device.createTexture(.{
+//!     .width = atlas.width,
+//!     .height = atlas.height,
+//!     .data = atlas.pixels,
 //! });
 //! ```
 //!
@@ -23,13 +33,13 @@
 //! library does not guess. Both are fields of `Image`, and a program that
 //! knows which GPU it is talking to fills them in once.
 //!
-//! **Nothing here decodes.** Reading a PNG means reading every PNG - sixteen
-//! bit channels, palettes, interlacing, gamma - which is a different amount of
-//! code for a different reason. Writing one is a hundred lines, and it is the
-//! hundred lines every renderer's test suite ends up wanting.
+//! **What comes back from a file is one shape.** RGBA, eight bits a channel,
+//! top row first, tightly packed - whatever the file held. That is what a
+//! texture wants, and a caller that had to branch on what an exporter chose
+//! would be doing the decoder's job.
 //!
-//! Nothing here allocates except through the allocator it is handed, and
-//! only for as long as one call.
+//! Nothing here allocates except through the allocator it is handed. What
+//! `encode` takes it borrows; what `decode` returns it owns, until `deinit`.
 
 const std = @import("std");
 
@@ -43,6 +53,15 @@ pub const Origin = png.Origin;
 
 /// How the bytes of a pixel are laid out. See `png`.
 pub const Format = png.Format;
+
+/// A picture read from a file, and the memory it lives in. See `png`.
+pub const Decoded = png.Decoded;
+
+/// Everything reading one can fail with. See `png`.
+pub const DecodeError = png.DecodeError;
+
+/// How far to trust a file this program did not write. See `png`.
+pub const DecodeOptions = png.DecodeOptions;
 
 test {
     _ = png;

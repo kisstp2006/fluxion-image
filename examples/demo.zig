@@ -62,5 +62,29 @@ pub fn main(init: std.process.Init) !void {
     defer init.gpa.free(b);
 
     try out.print("{d} bytes each way, identical: {}\n", .{ a.len, std.mem.eql(u8, a, b) });
+
+    // And back in again. What comes out of the file is what went in: the
+    // encoder dropped the alpha, so it returns opaque, and everything else
+    // is the picture.
+    var read = try image.png.readFile(init.gpa, init.io, "zig-out/gradient.png", .{});
+    defer read.deinit(init.gpa);
+
+    var differences: usize = 0;
+    for (0..height) |y| {
+        for (0..width) |x| {
+            const was = pixels[(y * width + x) * 4 ..][0..3];
+            const now = read.at(@intCast(x), @intCast(y));
+            if (!std.mem.eql(u8, was, now[0..3])) differences += 1;
+        }
+    }
+    try out.print("read back {d} by {d}, {d} pixels differing\n", .{ read.width, read.height, differences });
+
+    // A file's size is in its first chunk, so an asset list can be built
+    // without expanding a single pixel.
+    const bytes = try std.Io.Dir.cwd().readFileAlloc(init.io, "zig-out/gradient.png", init.gpa, .limited(1 << 20));
+    defer init.gpa.free(bytes);
+    const measured = try image.png.size(bytes);
+    try out.print("measured from the header alone: {d} by {d}\n", .{ measured.width, measured.height });
+
     try out.flush();
 }
