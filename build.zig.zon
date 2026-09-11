@@ -8,7 +8,7 @@
     .dependencies = .{
         // The CRC every PNG chunk ends with.
         .fluxion_hash = .{
-            .url = "git+https://github.com/kisstp2006/fluxion-hash#3260ac0d478e025a143e2ef9094c1bf72a932868",
+            .url = "git+https://github.com/kisstp2006/fluxion-hash#d7211dc2a0e961a67ffb070f45e6089b8125069c",
             .hash = "fluxion_hash-0.1.0-Zu520_IkAQCn0T4xz2CCSD724jkXcbzZBb_dFirBrjS2",
         },
     },
