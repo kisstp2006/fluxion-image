@@ -6,7 +6,8 @@
 //!
 //!   `png`   A PNG, read and written: a frame saved so it can be looked at,
 //!           and a texture loaded so it can be drawn.
-//!   `jpeg`  A JPEG, read: a photo or a painting as a texture.
+//!   `jpeg`  A JPEG, read and written: a photo or a painting as a texture,
+//!           and a screenshot small enough to keep.
 //!
 //!   `decode` and `readFile` read either, whichever the file's first bytes
 //!   say it is - not its name, which a person can get wrong.
@@ -120,4 +121,5 @@ test "either kind of file is read by what it starts with" {
 test {
     _ = png;
     _ = jpeg;
+    _ = @import("jpeg_write.zig");
 }

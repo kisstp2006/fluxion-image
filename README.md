@@ -5,7 +5,7 @@ Pixels, and the files they travel in. For Zig 0.16.
 | Module | What it is |
 | --- | --- |
 | `png` | A PNG, read and written: a frame saved so it can be looked at, and a texture loaded so it can be drawn. |
-| `jpeg` | A JPEG, read: a photo or a painting as a texture. |
+| `jpeg` | A JPEG, read and written: a photo or a painting as a texture, and a screenshot small enough to keep. |
 
 `image.decode` and `image.readFile` read either, by what the file's first
 bytes say it is rather than by its name, which a person can get wrong.
@@ -59,9 +59,7 @@ there is no choosing not to:
 | Image data split across any number of `IDAT` chunks | One |
 | Everything else walked past: gamma, text, timestamps | Not written |
 
-**A JPEG is read, never written.** What a game draws comes as a photo or a
-painting from somebody else's program, and a frame saved to look at is a PNG.
-Reading one is reading what cameras, phones and paint programs write:
+**A JPEG is read as cameras, phones and paint programs write it:**
 
 | Read | Refused by name |
 | --- | --- |
@@ -77,6 +75,20 @@ brought back by libjpeg's triangle filters, and its fixed-point YCbCr to RGB.
 Against libjpeg-turbo the test pictures differ by three steps in a channel at
 worst, and by well under one in a hundred on average. A twelve-megapixel
 photo takes about a fifth of a second in a release build.
+
+**A JPEG is written baseline, in colour**, the kind everything reads, from the
+same `Image` a PNG is written from:
+
+```zig
+try image.jpeg.writeFile(io, "shot.jpg", frame, .{ .quality = 85 });          // colour halved both ways, as cameras keep it
+const bytes = try image.jpeg.encodeAlloc(gpa, frame, .{ .chroma = .full });   // kept whole, for text and pixel art
+```
+
+`quality` runs from 1 to 100 and means what libjpeg's does: the standard's
+tables scaled as libjpeg scales them, with the standard's Huffman tables, so
+a file comes out within a few bytes of the size libjpeg-turbo writes at the
+same setting, and reads back as close. A JPEG has no alpha: the colour is
+written as it is.
 
 Nothing here allocates except through the allocator it is handed. What
 `encode` takes it borrows; what `decode` returns it owns, until `deinit`.
@@ -144,6 +156,10 @@ halved both ways, restart markers in both orders, grey, CMYK, and two photos
 stored turned with Exif saying so. The rest cut a file short, change its
 coding or its precision to ones this refuses, and read Exif's orientation in
 both byte orders.
+
+The writer's tests read what it writes back with the reader here, at both
+samplings of the colour and at two qualities, from four channels and three,
+top row first and bottom row first.
 
 ## Build
 

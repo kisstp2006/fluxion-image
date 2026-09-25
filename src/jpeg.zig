@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
-//! Reading a JPEG.
+//! Reading a JPEG, and writing one: see `jpeg_write.zig` for that.
 //!
 //! ```zig
 //! var photo = try jpeg.readFile(gpa, io, "photo.jpg", .{});
 //! defer photo.deinit(gpa);
+//! try jpeg.writeFile(io, "copy.jpg", .{ .width = photo.width, .height = photo.height, .pixels = photo.pixels, .row_pitch = photo.width * 4 }, .{ .quality = 85 });
 //! ```
 //!
 //! **What comes out is what a PNG gives: RGBA, eight bits a channel, top row
@@ -40,6 +41,16 @@ const Allocator = std.mem.Allocator;
 const testing = std.testing;
 
 const png = @import("png.zig");
+const write = @import("jpeg_write.zig");
+
+/// How a JPEG is written: its quality and how finely its colour is kept.
+pub const EncodeOptions = write.EncodeOptions;
+pub const EncodeError = write.EncodeError;
+/// Write a baseline JPEG of an `Image`, into a writer, into memory, or
+/// into a file.
+pub const encode = write.encode;
+pub const encodeAlloc = write.encodeAlloc;
+pub const writeFile = write.writeFile;
 
 /// A decoded picture, and the memory it lives in: the same as a PNG's.
 pub const Decoded = png.Decoded;
