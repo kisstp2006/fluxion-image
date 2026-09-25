@@ -5,6 +5,10 @@ Pixels, and the files they travel in. For Zig 0.16.
 | Module | What it is |
 | --- | --- |
 | `png` | A PNG, read and written: a frame saved so it can be looked at, and a texture loaded so it can be drawn. |
+| `jpeg` | A JPEG, read: a photo or a painting as a texture. |
+
+`image.decode` and `image.readFile` read either, by what the file's first
+bytes say it is rather than by its name, which a person can get wrong.
 
 ```zig
 // Out, to be looked at.
@@ -16,8 +20,8 @@ try image.png.writeFile(gpa, io, "frame.png", .{
     .origin = .bottom_left,    // what glReadPixels hands back
 }, .{});
 
-// In, to be drawn.
-var atlas = try image.png.readFile(gpa, io, "atlas.png", .{});
+// In, to be drawn: a PNG or a JPEG.
+var atlas = try image.readFile(gpa, io, "atlas.png", .{});
 defer atlas.deinit(gpa);
 const texture = try device.createTexture(.{
     .width = atlas.width,
@@ -54,6 +58,25 @@ there is no choosing not to:
 | `tRNS`, as a palette's alphas or as one transparent colour | Nothing to say |
 | Image data split across any number of `IDAT` chunks | One |
 | Everything else walked past: gamma, text, timestamps | Not written |
+
+**A JPEG is read, never written.** What a game draws comes as a photo or a
+painting from somebody else's program, and a frame saved to look at is a PNG.
+Reading one is reading what cameras, phones and paint programs write:
+
+| Read | Refused by name |
+| --- | --- |
+| Baseline, extended sequential and progressive Huffman coding | Arithmetic coding |
+| Grey, YCbCr, RGB, and CMYK or YCCK with Adobe's marker | Lossless and hierarchical files |
+| Any sampling of the colour against the brightness | Twelve bits a sample |
+| Restart markers, and a file cut short - as far as it got | |
+| Exif's orientation: a phone's sideways photo comes out upright | |
+
+It comes out as a PNG does - RGBA, top row first, the alpha 255 - and like
+libjpeg's own reading: a float inverse DCT, colour halved across or down
+brought back by libjpeg's triangle filters, and its fixed-point YCbCr to RGB.
+Against libjpeg-turbo the test pictures differ by three steps in a channel at
+worst, and by well under one in a hundred on average. A twelve-megapixel
+photo takes about a fifth of a second in a release build.
 
 Nothing here allocates except through the allocator it is handed. What
 `encode` takes it borrows; what `decode` returns it owns, until `deinit`.
@@ -113,6 +136,14 @@ builds PNGs by hand for the cases no encoder would produce: a damaged CRC, a
 chunk that overruns the file, an interlaced picture, a filter number the
 format does not have, an index past the end of a palette, and a header
 claiming ten gigapixels.
+
+The JPEG tests are twelve small pictures in `src/testdata`, written by
+Pillow's libjpeg-turbo, each beside a PNG of what libjpeg-turbo reads back
+from it: baseline and progressive, the colour kept whole, halved across and
+halved both ways, restart markers in both orders, grey, CMYK, and two photos
+stored turned with Exif saying so. The rest cut a file short, change its
+coding or its precision to ones this refuses, and read Exif's orientation in
+both byte orders.
 
 ## Build
 
